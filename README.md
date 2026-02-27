@@ -9,6 +9,7 @@ This repository contains examples demonstrating the capabilities of NVIDIA cuPQC
 **What's included:**
 - Example applications with build configs
 - Reference implementations
+- **GPU Benchmark System** for performance testing
 
 
 ## About cuPQC SDK
@@ -26,8 +27,11 @@ NVIDIA cuPQC is a GPU-accelerated cryptography SDK containing specialized librar
 - **Hash Functions** (SHA-2, SHA-3, Poseidon2, Merkle Trees)
 - **Public-Key Cryptography** (ML-KEM, ML-DSA)
 
+**Benchmark:** See [benchmark/](benchmark/) directory for automated GPU performance testing.
+
 
 ## Quick Start
+
 ### Prerequisites
 
 | Requirement | Specification |
@@ -35,50 +39,94 @@ NVIDIA cuPQC is a GPU-accelerated cryptography SDK containing specialized librar
 | **GPU** | Compute Capability 7.0+ (SM 70, 75, 80, 86, 87, 89, 90) |
 | **CUDA** | 12.8 or newer |
 | **Compiler** | C++17 (GCC 7+, Clang 9+) |
-| **CMake** | 3.20+ (optional) |
-| **SDK** | cuPQC 0.4.1+ |
+| **Docker** | With NVIDIA Container Toolkit |
+| **SDK** | cuPQC 0.4.1+ (included in benchmark) |
 
-### Download cuPQC SDK
-[Download the SDK](https://developer.nvidia.com/cupqc-download/)
+### Download cuPQC SDK (for local development)
+[Download the SDK](https://developer.download.nvidia.com/cupqc-download/)
 
-### Install cuPQC SDK
+Or use the automated benchmark which includes SDK setup.
 
-**x86_64:**
-```bash
-wget https://developer.download.nvidia.com/compute/cupqc/redist/cupqc/cupqc-sdk-0.4.1-x86_64.tar.gz
-tar -xzf cupqc-sdk-0.4.1-x86_64.tar.gz
-```
-
-**ARM aarch64:**
-```bash
-wget https://developer.download.nvidia.com/compute/cupqc/redist/cupqc/cupqc-sdk-0.4.1-aarch64.tar.gz
-tar -xzf cupqc-sdk-0.4.1-aarch64.tar.gz
-```
-
-### Configure SDK Path
-
-Set the `CUPQC_SDK_DIR` environment variable to point to the extracted SDK directory:
+### Build Examples
 
 ```bash
-# Option 1: Use extracted directory directly
-export CUPQC_SDK_DIR=/path/to/cupqc-sdk-0.4.1-x86_64
+# Set SDK path (if not at default /usr/local/cupqc-sdk)
+export CUPQC_SDK_DIR=/path/to/cupqc-sdk
 
-# Option 2: Install to standard location
-sudo mv cupqc-sdk-0.4.1-x86_64 /usr/local/cupqc-sdk
-export CUPQC_SDK_DIR=/usr/local/cupqc-sdk
+# Build hash examples
+cd examples/hash
+make
+
+# Build public key examples
+cd examples/public_key
+make
 ```
 
-**Default path:** If `CUPQC_SDK_DIR` is not set, applications will look for the SDK at `/usr/local/cupqc-sdk`
+### Run Examples
 
-**Make path persistent:** Add the `export` command to your `~/.bashrc` or `~/.zshrc`
-
-**Verify installation:**
 ```bash
-ls $CUPQC_SDK_DIR/include  # Should show header files
-ls $CUPQC_SDK_DIR/lib      # Should show library files
+cd examples/hash
+./example_sha2
+./example_sha3
+./example_poseidon2
+./example_merkle
+
+cd examples/public_key
+./example_ml_kem
+./example_ml_dsa
 ```
 
-For detailed installation, see the [Getting Started Guide](https://docs.nvidia.com/cuda/cupqc/guides/getting_started.html).
+---
+
+## GPU Benchmark
+
+Automated performance testing system for cuPQC algorithms. Uses Docker with GPU passthrough.
+
+### Features
+
+- 🚀 Automated build & benchmark execution
+- 📊 Multi-batch-size performance testing
+- 📈 Chart.js visualization (latency & throughput)
+- 🌐 HTTP web server for report access
+
+### Quick Start
+
+```bash
+cd benchmark
+
+# Build and run (one command)
+docker compose up --build
+```
+
+### Access Report
+
+Open browser: **http://localhost:8080**
+
+### Benchmark Parameters
+
+Customize in `.env` file:
+
+```bash
+# Example .env
+BENCHMARK_ITERATIONS=10
+BENCHMARK_BATCH_SIZES=1,10,100,1000,5000
+HTTP_PORT=8080
+```
+
+### Tested Algorithms
+
+| Category | Algorithms |
+|----------|------------|
+| Hash Functions | SHA-2 256, SHA-3, Poseidon2, Merkle Tree |
+| Public Key | ML-KEM 512, ML-DSA 44 |
+
+### Output Files
+
+- `results/index.html` - Visual report with charts
+- `results/results_latest.json` - Raw benchmark data
+- `results/results_*.json` - Historical data
+
+For detailed benchmark documentation, see [benchmark/README.md](benchmark/README.md).
 
 
 ## Documentation & Resources
