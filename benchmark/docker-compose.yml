@@ -1,0 +1,78 @@
+# =============================================================================
+# cuPQC Benchmark Docker Compose
+# =============================================================================
+# Usage: docker compose up --build
+#
+# This will:
+# 1. Mount local cuPQC SDK into container
+# 2. Build the examples
+# 3. Run benchmarks
+# 4. Start web server at http://localhost:8080
+# =============================================================================
+
+services:
+  cupqc-benchmark:
+    build:
+      context: ..
+      dockerfile: benchmark/Dockerfile
+    image: cupqc-benchmark:latest
+    container_name: cupqc-benchmark
+    
+    # GPU Configuration
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # Environment variables
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CUPQC_SDK_DIR=/opt/cupqc-sdk
+      - BENCHMARK_ITERATIONS=${BENCHMARK_ITERATIONS:-10}
+      - BENCHMARK_BATCH_SIZES=${BENCHMARK_BATCH_SIZES:-1,10,100,1000,5000}
+      - CUDA_VISIBLE_DEVICES=0
+    
+    # Volume mounts
+    volumes:
+      # Local cuPQC SDK (extracted directory)
+      - ../cupqc-sdk-0.4.1-x86_64:/opt/cupqc-sdk:ro
+      
+      # Results directory
+      - ./results:/workspace/benchmark/results
+      
+      # Examples (must be writable for compilation)
+      - ../examples:/workspace/examples
+    
+    # Network
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    
+    # Runtime
+    runtime: nvidia
+    command: >
+      /bin/bash -c "
+        echo '=== Using local cuPQC SDK ===' &&
+        ls -la /opt/cupqc-sdk/ &&
+        ls -la /opt/cupqc-sdk/include/ &&
+        ls -la /opt/cupqc-sdk/lib/ &&
+        echo '=== Building Examples ===' &&
+        cd /workspace/examples/hash && make clean && make &&
+        cd /workspace/examples/public_key && make clean && make &&
+        echo '=== Running Benchmarks ===' &&
+        cd /workspace/benchmark &&
+        python3 scripts/run_benchmark.py --iterations $BENCHMARK_ITERATIONS --batches $BENCHMARK_BATCH_SIZES &&
+        echo '=== Starting Web Server ===' &&
+        python3 scripts/web_server.py
+      "
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s

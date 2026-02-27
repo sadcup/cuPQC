@@ -1,0 +1,26 @@
+# cuPQC Benchmark - Git Ignore
+
+# Results directory
+results/
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environment
+.env
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
